@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Bogdan Gulowaty <b.gulowaty@gmail.com>"]
 readme = "README.md"
-packages = [{include = "nonoverlappingrulesensemble"}]
+packages = [{include = "note"}]
 
 [tool.pytest.ini_options]
 python_files = "*.py"
@@ -17,6 +17,7 @@ imblearn = "^0.0"
 joblib = "^1.2.0"
 networkx = "^2.8.7"
 sympy = "^1.11.1"
+python-box = "^6.0.2"
 
 [tool.poetry.group.dev.dependencies]
 jupyterlab = "^3.4.8"
