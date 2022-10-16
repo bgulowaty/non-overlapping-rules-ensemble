@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "non-overlapping-rules-ensemble"
+version = "0.1.0"
+description = ""
+authors = ["Bogdan Gulowaty <b.gulowaty@gmail.com>"]
+readme = "README.md"
+packages = [{include = "nonoverlappingrulesensemble"}]
+
+[tool.pytest.ini_options]
+python_files = "*.py"
+norecursedirs=["libs"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+x-to-rules = {path = "libs/rules", develop = true}
+imblearn = "^0.0"
+joblib = "^1.2.0"
+networkx = "^2.8.7"
+sympy = "^1.11.1"
+
+[tool.poetry.group.dev.dependencies]
+jupyterlab = "^3.4.8"
+mlflow = "^1.29.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
