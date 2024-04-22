@@ -13,15 +13,16 @@ norecursedirs=["libs"]
 [tool.poetry.dependencies]
 python = "^3.10"
 x-to-rules = {path = "libs/rules", develop = true}
-imblearn = "^0.0"
-joblib = "^1.2.0"
 networkx = "^2.8.7"
 sympy = "^1.11.1"
-python-box = "^6.0.2"
+python-box = "*"
+numba = "^0.59.1"
+datasetz = {path = "../datasets", develop = true}
+imbalanced-learn = "^0.12.2"
+ml-utils = {path = "../ml-utils"}
 
 [tool.poetry.group.dev.dependencies]
-jupyterlab = "^3.4.8"
-mlflow = "^1.29.0"
+jupyterlab = "*"
 
 [build-system]
 requires = ["poetry-core"]
