@@ -32,17 +32,17 @@ def test_passes_for_default_arguments_and_breast_cancer():
 
 def test_note_v2_without_test_data():
     from sklearn.datasets import load_iris
-    rf = RandomForestClassifier(n_estimators=3, random_state=42, max_depth=5)
+    rf = RandomForestClassifier(n_estimators=5, random_state=42, max_depth=None)
     data = load_iris()
     x, y = data.data, data.target
     rf.fit(x, y)
 
     params = Box({
-        "subspaces": 5,
+        "subspaces": 3,
         "n_jobs": 8,
         "selection_methods": ['balanced_accuracy', 'accuracy', 'rf_accuracy', 'rf_balanced_accuracy', 'accuracy/accuracy_stddev'],
         "cv": 5,
-        "max_depth": 5
+        "depth": 5
     })
 
     results = run(x, y, rf, params)

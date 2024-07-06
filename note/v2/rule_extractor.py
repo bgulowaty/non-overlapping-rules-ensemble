@@ -106,11 +106,12 @@ def measure_rules_2(all_rules, n_jobs: int = 1):
     with tqdm_joblib(tqdm(desc="measure_rules", total=len(rule_combinations))) as progress_bar:
         measured_combinations = Parallel(n_jobs=n_jobs, backend='loky')(
             delayed(
-                lambda comb: reduce_inequalities(comb[0] + comb[1]) != False
+                lambda comb: not reduce_inequalities(comb[0] + comb[1])
             )(combination)
             for combination in rule_combinations
         )
-
+        print("HALO")
+    print("Zipping!:<")
     return dict(zip(combination_idxes, measured_combinations))
 
 def to_set_by_feature(rule):
@@ -122,7 +123,6 @@ def spans_overlap(spans1, spans2):
 
     return any(reduce(lambda x,y: x.intersect(y), spans1.get(feature, sympy.EmptySet) + spans2.get(feature, sympy.UniversalSet)) != sympy.EmptySet
                for feature in all_features)
-
 
 
 def test_measurer_adjacent():

@@ -1,30 +1,29 @@
-
-import time
-import warnings
+import tempfile
 from collections import defaultdict
 
 import joblib
 import networkx as nx
 import numpy as np
-import pandas as pd
 from imblearn.metrics import geometric_mean_score
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, Memory
 from networkx.algorithms.clique import find_cliques
+from scipy.stats import entropy
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import make_scorer, balanced_accuracy_score, cohen_kappa_score
+from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import cross_validate
+from sympy import parse_expr
+from toolz.curried import pipe, filter, map, reduce
+
 from rules.api import AdjacentOrNot
 from rules.classification.rule_measures import BayesianRuleMeasures, covered_by_statements
 from rules.classification.subspace_rules_classifier import SubspaceRulesClassifier
 from rules.note.extract_rules import extract_rules
 from rules.note.overlapping.measure_adjacencies import measure_rules
 from rules.utils.utils import join_consecutive_statements
-from scipy.stats import entropy
-from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import recall_score, make_scorer, confusion_matrix, f1_score, precision_score, balanced_accuracy_score, cohen_kappa_score
-from sklearn.model_selection import ShuffleSplit
-from sklearn.model_selection import cross_validate
-from sklearn.tree import DecisionTreeClassifier
-from sympy import parse_expr
-from toolz.curried import pipe, filter, map, reduce
+
+memory = Memory(tempfile.mkdtemp(), verbose=3)
+
 
 DEFAULT_PARAMS = {
     "n_estimators": 5,
@@ -119,9 +118,13 @@ def run(x_train, y_train, clf_rf, params):
     def get_val(clique, x_train, y_train):
 
         rules = np.array(all_rules)[clique]
-        clf = SubspaceRulesClassifier(rules=rules, max_depth=params.max_depth, random_state=42)
+        return score_for_rules(set(rules), x_train, y_train)
 
-        skf = ShuffleSplit(n_splits=params.cv, test_size=0.5,random_state=42)
+    @memory.cache(verbose=1)
+    def score_for_rules(rules, x_train, y_train):
+        rules = list(rules)
+        clf = SubspaceRulesClassifier(rules=rules, max_depth=params.max_depth, random_state=42)
+        skf = ShuffleSplit(n_splits=params.cv, test_size=0.5, random_state=42)
         with joblib.parallel_backend('threading'):
             scores = cross_validate(clf, x_train, y_train, n_jobs=1, scoring={
                 'balanced_accuracy': 'balanced_accuracy',
@@ -134,9 +137,7 @@ def run(x_train, y_train, clf_rf, params):
                 'rf_balanced_accuracy': bal_accuracy_with_rf,
                 'rf_cohen_kappa': rf_kohen_cappa
             }, cv=skf)
-
         additional_scores = defaultdict(list)
-
         skf = ShuffleSplit(n_splits=params.cv, test_size=0.5, random_state=42)
         for train_index, test_idx in skf.split(x_train, y_train):
             x_train_split = x_train[train_index]
@@ -157,12 +158,8 @@ def run(x_train, y_train, clf_rf, params):
 
             for score_name, this_score in dict(mean_rule_scores).items():
                 additional_scores[score_name].append(np.mean(this_score))
-
-
-
         final_clf = SubspaceRulesClassifier(rules=rules, max_depth=params.max_depth, random_state=42)
         final_clf.fit(x_train, y_train)
-
         scores = {
             **scores,
             **dict(additional_scores),
@@ -171,11 +168,10 @@ def run(x_train, y_train, clf_rf, params):
             **{k[5:] if k.startswith('test_') else k: np.mean(v) for k, v in scores.items()},
             **{f"{k[5:]}_stddev" if k.startswith('test_') else f"{k}_stddev": np.std(v) for k, v in scores.items()},
         }
-
         score_by_selection_method = {
-            'score ' + method: float(parse_expr(method).evalf(subs=scores_without_test_preffix)) for method in params.selection_methods
+            'score ' + method: float(parse_expr(method).evalf(subs=scores_without_test_preffix)) for method in
+            params.selection_methods
         }
-
         return {
             **scores_without_test_preffix,
             **score_by_selection_method
